@@ -23,20 +23,10 @@ pub enum Token {
     GreaterEqual,
     Slash,
     String(String),
-    Number { value: MyFloat },
+    Number(String),
     Identifier(String),
     Invalid { err: String, line: usize },
 }
-
-pub struct MyFloat(f64);
-
-impl PartialEq for MyFloat {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl Eq for MyFloat {}
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -62,12 +52,12 @@ impl fmt::Display for Token {
             Token::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
             Token::Slash => write!(f, "SLASH / null"),
             Token::String(s) => write!(f, "STRING \"{}\" {}", s, s),
-            Token::Number { value } => {
-                let is_float = value.0.to_string().contains('.');
+            Token::Number(n) => {
+                let is_float = n.contains('.');
                 if is_float {
-                    write!(f, "NUMBER {} {}", value.0, value.0)
+                    write!(f, "NUMBER {} {}", n, n)
                 } else {
-                    write!(f, "NUMBER {} {1:.1}", value.0, value.0)
+                    write!(f, "NUMBER {} {1:.1}", n, n.parse::<f64>().unwrap())
                 }
             }
             Token::Identifier(s) => write!(f, "IDENTIFIER {} null", s),
@@ -190,9 +180,7 @@ impl Token {
 
         while *i < bytes.len() && ((bytes[*i] as char).is_numeric() || bytes[*i] == b'.') {
             if bytes[*i] == b'.' && is_float {
-                tokens.push(Token::Number {
-                    value: MyFloat(number.parse::<f64>().unwrap()),
-                });
+                tokens.push(Token::Number(number.clone()));
                 return (false, true);
             } else if bytes[*i] == b'.' && !is_float {
                 is_float = true;
@@ -203,16 +191,12 @@ impl Token {
         }
 
         if number.ends_with('.') {
-            tokens.push(Token::Number {
-                value: MyFloat(number.parse::<f64>().unwrap()),
-            });
+            tokens.push(Token::Number(number.clone()));
             *i -= 1;
             return (false, true);
         }
 
-        tokens.push(Token::Number {
-            value: MyFloat(number.parse::<f64>().unwrap()),
-        });
+        tokens.push(Token::Number(number.clone()));
         (false, true)
     }
 
