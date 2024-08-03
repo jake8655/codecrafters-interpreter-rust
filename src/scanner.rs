@@ -178,7 +178,6 @@ impl Token {
         i: &mut usize,
         bytes: &[u8],
         tokens: &mut Vec<Token>,
-        line_number: usize,
     ) -> (Option<bool>, Option<bool>) {
         let mut number = String::new();
         number.push(bytes[*i] as char);
@@ -190,10 +189,6 @@ impl Token {
         }
 
         if number.ends_with('.') {
-            tokens.push(Token::Invalid {
-                err: "Invalid number.".to_string(),
-                line: line_number + 1,
-            });
             return (None, Some(true));
         }
 
@@ -224,7 +219,7 @@ impl Token {
 
                 if (bytes[i] as char).is_numeric() {
                     let (skip_line, skip_char) =
-                        Token::parse_number_literal(&mut i, bytes, &mut tokens, line_number);
+                        Token::parse_number_literal(&mut i, bytes, &mut tokens);
                     if skip_line.unwrap_or(false) {
                         continue 'line;
                     }
