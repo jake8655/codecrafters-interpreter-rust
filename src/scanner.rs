@@ -22,7 +22,8 @@ pub enum Token {
     Greater,
     GreaterEqual,
     Slash,
-    Invalid { char: char, line: usize },
+    String(String),
+    Invalid { err: String, line: usize },
 }
 
 impl fmt::Display for Token {
@@ -48,8 +49,9 @@ impl fmt::Display for Token {
             Token::Greater => write!(f, "GREATER > null"),
             Token::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
             Token::Slash => write!(f, "SLASH / null"),
-            Token::Invalid { char, line } => {
-                write!(f, "[line {}] Error: Unexpected character: {}", line, char)
+            Token::String(s) => write!(f, "STRING \"{}\" {}", s, s),
+            Token::Invalid { err, line } => {
+                write!(f, "[line {}] Error: {}", line, err)
             }
         }
     }
@@ -120,17 +122,46 @@ impl Token {
                 }
             }
             ' ' | '\t' => (None, false),
-            _ => (Some(Token::Invalid { char: c, line }), false),
+            _ => (
+                Some(Token::Invalid {
+                    err: format!("Unexpected character: {}", c),
+                    line,
+                }),
+                false,
+            ),
         }
     }
 
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
 
-        'outer: for (line_number, line) in file_contents.lines().enumerate() {
+        'line: for (line_number, line) in file_contents.lines().enumerate() {
             let bytes = line.as_bytes();
             let mut i = 0;
-            while i < bytes.len() {
+            'char: while i < bytes.len() {
+                if bytes[i] == b'"' {
+                    let mut string = String::new();
+                    i += 1;
+                    while i < bytes.len() {
+                        if bytes[i] == b'"' {
+                            break;
+                        }
+
+                        if i + 1 == bytes.len() {
+                            tokens.push(Token::Invalid {
+                                err: "Unterminated string.".to_string(),
+                                line: line_number + 1,
+                            });
+                            continue 'line;
+                        }
+                        string.push(bytes[i] as char);
+                        i += 1;
+                    }
+                    tokens.push(Token::String(string));
+                    i += 1;
+                    continue 'char;
+                }
+
                 let next_char = bytes.get(i + 1).map(|b| *b as char);
 
                 let (token, skip) =
@@ -139,7 +170,7 @@ impl Token {
                 if let Some(token) = token {
                     tokens.push(token);
                 } else if skip {
-                    continue 'outer;
+                    continue 'line;
                 }
 
                 if skip {

@@ -55,9 +55,15 @@ fn main() {
 
 fn display_tokens(tokens: &Vec<scanner::Token>) {
     for token in tokens {
-        match *token {
-            scanner::Token::Invalid { char, line } => {
-                eprintln!("{}", scanner::Token::Invalid { char, line });
+        match token {
+            scanner::Token::Invalid { err, line } => {
+                eprintln!(
+                    "{}",
+                    scanner::Token::Invalid {
+                        err: err.clone(),
+                        line: *line
+                    }
+                );
             }
             _ => {
                 println!("{}", token);
