@@ -21,7 +21,7 @@ impl From<char> for Token {
         match c {
             '(' => Token::LeftParen,
             ')' => Token::RightParen,
-            _ => Token::Eof,
+            _ => panic!("Invalid token {}", c),
         }
     }
 }
@@ -29,9 +29,12 @@ impl From<char> for Token {
 impl Token {
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
+
         for c in file_contents.chars() {
             tokens.push(c.into());
         }
+        tokens.push(Token::Eof);
+
         tokens
     }
 }
