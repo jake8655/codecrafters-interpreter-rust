@@ -61,7 +61,14 @@ impl fmt::Display for Token {
             Token::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
             Token::Slash => write!(f, "SLASH / null"),
             Token::String(s) => write!(f, "STRING \"{}\" {}", s, s),
-            Token::Number { value } => write!(f, "NUMBER {} {}", value.0, value.0),
+            Token::Number { value } => {
+                let is_float = value.0.to_string().contains('.');
+                if is_float {
+                    write!(f, "NUMBER {} {}", value.0, value.0)
+                } else {
+                    write!(f, "NUMBER {} {1:.1}", value.0, value.0)
+                }
+            }
             Token::Invalid { err, line } => {
                 write!(f, "[line {}] Error: {}", line, err)
             }
@@ -192,10 +199,6 @@ impl Token {
 
             number.push(bytes[*i] as char);
             *i += 1;
-        }
-
-        if number.ends_with('.') {
-            return (true, false);
         }
 
         tokens.push(Token::Number {
