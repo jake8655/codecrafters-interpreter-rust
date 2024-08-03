@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, fmt};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum Token {
     Eof,
     LeftParen,
@@ -23,8 +23,19 @@ pub enum Token {
     GreaterEqual,
     Slash,
     String(String),
+    Number { value: MyFloat },
     Invalid { err: String, line: usize },
 }
+
+pub struct MyFloat(f64);
+
+impl PartialEq for MyFloat {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for MyFloat {}
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -50,6 +61,7 @@ impl fmt::Display for Token {
             Token::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
             Token::Slash => write!(f, "SLASH / null"),
             Token::String(s) => write!(f, "STRING \"{}\" {}", s, s),
+            Token::Number { value } => write!(f, "NUMBER {} {}", value.0, value.0),
             Token::Invalid { err, line } => {
                 write!(f, "[line {}] Error: {}", line, err)
             }
@@ -132,6 +144,66 @@ impl Token {
         }
     }
 
+    fn parse_string_literal(
+        i: &mut usize,
+        bytes: &[u8],
+        tokens: &mut Vec<Token>,
+        line_number: usize,
+    ) -> (Option<bool>, Option<bool>) {
+        let mut string = String::new();
+        *i += 1;
+        let mut skips = (None, None);
+        while *i < bytes.len() {
+            if bytes[*i] == b'"' {
+                break;
+            }
+
+            if *i + 1 == bytes.len() {
+                tokens.push(Token::Invalid {
+                    err: "Unterminated string.".to_string(),
+                    line: line_number + 1,
+                });
+                skips.0 = Some(true);
+            }
+            string.push(bytes[*i] as char);
+            *i += 1;
+        }
+        tokens.push(Token::String(string));
+        *i += 1;
+        skips.1 = Some(true);
+        skips
+    }
+
+    fn parse_number_literal(
+        i: &mut usize,
+        bytes: &[u8],
+        tokens: &mut Vec<Token>,
+        line_number: usize,
+    ) -> (Option<bool>, Option<bool>) {
+        let mut number = String::new();
+        number.push(bytes[*i] as char);
+        *i += 1;
+
+        while *i < bytes.len() && ((bytes[*i] as char).is_numeric() || bytes[*i] == b'.') {
+            number.push(bytes[*i] as char);
+            *i += 1;
+        }
+
+        if number.ends_with('.') {
+            tokens.push(Token::Invalid {
+                err: "Invalid number.".to_string(),
+                line: line_number + 1,
+            });
+            return (None, Some(true));
+        }
+
+        tokens.push(Token::Number {
+            value: MyFloat(number.parse::<f64>().unwrap()),
+        });
+        *i += 1;
+        (None, Some(true))
+    }
+
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
 
@@ -140,32 +212,30 @@ impl Token {
             let mut i = 0;
             'char: while i < bytes.len() {
                 if bytes[i] == b'"' {
-                    let mut string = String::new();
-                    i += 1;
-                    while i < bytes.len() {
-                        if bytes[i] == b'"' {
-                            break;
-                        }
-
-                        if i + 1 == bytes.len() {
-                            tokens.push(Token::Invalid {
-                                err: "Unterminated string.".to_string(),
-                                line: line_number + 1,
-                            });
-                            continue 'line;
-                        }
-                        string.push(bytes[i] as char);
-                        i += 1;
+                    let (skip_line, skip_char) =
+                        Token::parse_string_literal(&mut i, bytes, &mut tokens, line_number);
+                    if skip_line.unwrap_or(false) {
+                        continue 'line;
                     }
-                    tokens.push(Token::String(string));
-                    i += 1;
-                    continue 'char;
+                    if skip_char.unwrap_or(false) {
+                        continue 'char;
+                    }
+                }
+
+                if (bytes[i] as char).is_numeric() {
+                    let (skip_line, skip_char) =
+                        Token::parse_number_literal(&mut i, bytes, &mut tokens, line_number);
+                    if skip_line.unwrap_or(false) {
+                        continue 'line;
+                    }
+                    if skip_char.unwrap_or(false) {
+                        continue 'char;
+                    }
                 }
 
                 let next_char = bytes.get(i + 1).map(|b| *b as char);
 
-                let (token, skip) =
-                    Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
+                let (token, skip) = Token::tokenize_char(bytes[i] as char, next_char, line_number);
 
                 if let Some(token) = token {
                     tokens.push(token);
