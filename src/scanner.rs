@@ -247,7 +247,8 @@ impl Token {
 
                 let next_char = bytes.get(i + 1).map(|b| *b as char);
 
-                let (token, skip) = Token::tokenize_char(bytes[i] as char, next_char, line_number);
+                let (token, skip) =
+                    Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
 
                 if let Some(token) = token {
                     tokens.push(token);
