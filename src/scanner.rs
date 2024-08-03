@@ -191,6 +191,7 @@ impl Token {
         }
 
         if number.ends_with('.') {
+            number.pop();
             tokens.push(Token::Number(number.clone()));
             *i -= 1;
             return (false, true);
