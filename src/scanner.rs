@@ -53,7 +53,7 @@ impl fmt::Display for Token {
             Token::Slash => write!(f, "SLASH / null"),
             Token::String(s) => write!(f, "STRING \"{}\" {}", s, s),
             Token::Number(n) => {
-                let is_float = n.contains('.');
+                let is_float = n.parse::<f64>().unwrap().fract().abs() > 0.0;
                 if is_float {
                     write!(f, "NUMBER {} {}", n, n)
                 } else {
