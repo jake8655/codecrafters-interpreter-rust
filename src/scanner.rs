@@ -21,6 +21,7 @@ pub enum Token {
     LessEqual,
     Greater,
     GreaterEqual,
+    Slash,
     Invalid { char: char, line: usize },
 }
 
@@ -46,6 +47,7 @@ impl fmt::Display for Token {
             Token::LessEqual => write!(f, "LESS_EQUAL <= null"),
             Token::Greater => write!(f, "GREATER > null"),
             Token::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
+            Token::Slash => write!(f, "SLASH / null"),
             Token::Invalid { char, line } => {
                 write!(f, "[line {}] Error: Unexpected character: {}", line, char)
             }
@@ -70,54 +72,61 @@ impl Ord for Token {
 }
 
 impl Token {
-    fn tokenize_char(c: char, next_char: Option<char>, line: usize) -> (Token, bool) {
+    fn tokenize_char(c: char, next_char: Option<char>, line: usize) -> (Option<Token>, bool) {
         match c {
-            '(' => (Token::LeftParen, false),
-            ')' => (Token::RightParen, false),
-            '{' => (Token::LeftBrace, false),
-            '}' => (Token::RightBrace, false),
-            ',' => (Token::Comma, false),
-            '.' => (Token::Dot, false),
-            '-' => (Token::Minus, false),
-            '+' => (Token::Plus, false),
-            ';' => (Token::Semicolon, false),
-            '*' => (Token::Star, false),
+            '(' => (Some(Token::LeftParen), false),
+            ')' => (Some(Token::RightParen), false),
+            '{' => (Some(Token::LeftBrace), false),
+            '}' => (Some(Token::RightBrace), false),
+            ',' => (Some(Token::Comma), false),
+            '.' => (Some(Token::Dot), false),
+            '-' => (Some(Token::Minus), false),
+            '+' => (Some(Token::Plus), false),
+            ';' => (Some(Token::Semicolon), false),
+            '*' => (Some(Token::Star), false),
             '=' => {
                 if let Some('=') = next_char {
-                    (Token::EqualEqual, true)
+                    (Some(Token::EqualEqual), true)
                 } else {
-                    (Token::Equal, false)
+                    (Some(Token::Equal), false)
                 }
             }
             '!' => {
                 if let Some('=') = next_char {
-                    (Token::BangEqual, true)
+                    (Some(Token::BangEqual), true)
                 } else {
-                    (Token::Bang, false)
+                    (Some(Token::Bang), false)
                 }
             }
             '<' => {
                 if let Some('=') = next_char {
-                    (Token::LessEqual, true)
+                    (Some(Token::LessEqual), true)
                 } else {
-                    (Token::Less, false)
+                    (Some(Token::Less), false)
                 }
             }
             '>' => {
                 if let Some('=') = next_char {
-                    (Token::GreaterEqual, true)
+                    (Some(Token::GreaterEqual), true)
                 } else {
-                    (Token::Greater, false)
+                    (Some(Token::Greater), false)
                 }
             }
-            _ => (Token::Invalid { char: c, line }, false),
+            '/' => {
+                if let Some('/') = next_char {
+                    (None, true)
+                } else {
+                    (Some(Token::Slash), false)
+                }
+            }
+            _ => (Some(Token::Invalid { char: c, line }), false),
         }
     }
 
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
 
-        for (line_number, line) in file_contents.lines().enumerate() {
+        'outer: for (line_number, line) in file_contents.lines().enumerate() {
             let bytes = line.as_bytes();
             let mut i = 0;
             while i < bytes.len() {
@@ -126,7 +135,12 @@ impl Token {
                 let (token, skip) =
                     Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
 
-                tokens.push(token);
+                if let Some(token) = token {
+                    tokens.push(token);
+                } else {
+                    continue 'outer;
+                }
+
                 if skip {
                     i += 1;
                 }
