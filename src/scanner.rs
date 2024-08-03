@@ -10,8 +10,8 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Token::Eof => write!(f, "EOF  null"),
-            Token::LeftParen => write!(f, "LEFT_PAREN  ( null"),
-            Token::RightParen => write!(f, "RIGHT_PAREN  ) null"),
+            Token::LeftParen => write!(f, "LEFT_PAREN ( null"),
+            Token::RightParen => write!(f, "RIGHT_PAREN ) null"),
         }
     }
 }
