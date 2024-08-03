@@ -1,4 +1,3 @@
-use ansi_term::Color::Red;
 use std::{cmp::Ordering, fmt};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -31,13 +30,9 @@ impl fmt::Display for Token {
             Token::Plus => write!(f, "PLUS + null"),
             Token::Semicolon => write!(f, "SEMICOLON ; null"),
             Token::Star => write!(f, "STAR * null"),
-            Token::Invalid { char, line } => write!(
-                f,
-                "[line {}] {}: Unexpected character: {}",
-                line,
-                Red.paint("Error"),
-                char
-            ),
+            Token::Invalid { char, line } => {
+                write!(f, "[line {}] Error: Unexpected character: {}", line, char)
+            }
         }
     }
 }
