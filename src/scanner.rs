@@ -15,6 +15,8 @@ pub enum Token {
     Star,
     Equal,
     EqualEqual,
+    Bang,
+    BangEqual,
     Invalid { char: char, line: usize },
 }
 
@@ -34,6 +36,8 @@ impl fmt::Display for Token {
             Token::Star => write!(f, "STAR * null"),
             Token::Equal => write!(f, "EQUAL = null"),
             Token::EqualEqual => write!(f, "EQUAL_EQUAL == null"),
+            Token::Bang => write!(f, "BANG ! null"),
+            Token::BangEqual => write!(f, "BANG_EQUAL != null"),
             Token::Invalid { char, line } => {
                 write!(f, "[line {}] Error: Unexpected character: {}", line, char)
             }
@@ -75,6 +79,13 @@ impl Token {
                     (Token::EqualEqual, true)
                 } else {
                     (Token::Equal, false)
+                }
+            }
+            '!' => {
+                if let Some('=') = next_char {
+                    (Token::BangEqual, true)
+                } else {
+                    (Token::Bang, false)
                 }
             }
             _ => (Token::Invalid { char: c, line }, false),
