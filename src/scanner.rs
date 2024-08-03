@@ -212,7 +212,6 @@ impl Token {
         tokens.push(Token::Number {
             value: MyFloat(number.parse::<f64>().unwrap()),
         });
-        *i += 1;
         (false, true)
     }
 
