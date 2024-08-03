@@ -4,6 +4,8 @@ pub enum Token {
     Eof,
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
 }
 
 impl fmt::Display for Token {
@@ -12,6 +14,8 @@ impl fmt::Display for Token {
             Token::Eof => write!(f, "EOF  null"),
             Token::LeftParen => write!(f, "LEFT_PAREN ( null"),
             Token::RightParen => write!(f, "RIGHT_PAREN ) null"),
+            Token::LeftBrace => write!(f, "LEFT_BRACE {{ null"),
+            Token::RightBrace => write!(f, "RIGHT_BRACE }} null"),
         }
     }
 }
@@ -21,6 +25,8 @@ impl From<char> for Token {
         match c {
             '(' => Token::LeftParen,
             ')' => Token::RightParen,
+            '{' => Token::LeftBrace,
+            '}' => Token::RightBrace,
             _ => panic!("Invalid token {}", c),
         }
     }
