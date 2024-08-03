@@ -1,37 +1,42 @@
-use std::env;
 use std::fs;
-use std::io::{self, Write};
+use std::path::PathBuf;
+
+use clap::{Parser, ValueEnum};
+
+#[derive(Parser, Debug)]
+/// Lox interpreter
+#[command(version, long_about = None)]
+struct Cli {
+    /// The mode to run the program in
+    #[arg(value_enum)]
+    command: Command,
+
+    /// The file to parse
+    #[arg()]
+    file_path: PathBuf,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Command {
+    /// Print the tokens of the file
+    #[clap(name = "tokenize", alias = "t")]
+    Tokenize,
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        writeln!(io::stderr(), "Usage: {} tokenize <filename>", args[0]).unwrap();
-        return;
-    }
+    let args = Cli::parse();
 
-    let command = &args[1];
-    let filename = &args[2];
+    match args.command {
+        Command::Tokenize => {
+            let Ok(file_contents) = fs::read_to_string(&args.file_path) else {
+                return eprintln!("Failed to read file {}", args.file_path.display());
+            };
 
-    match command.as_str() {
-        "tokenize" => {
-            // You can use print statements as follows for debugging, they'll be visible when running tests.
-            writeln!(io::stderr(), "Logs from your program will appear here!").unwrap();
-
-            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
-                writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();
-                String::new()
-            });
-
-            // Uncomment this block to pass the first stage
-            // if !file_contents.is_empty() {
-            //     panic!("Scanner not implemented");
-            // } else {
-            //     println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
-            // }
-        }
-        _ => {
-            writeln!(io::stderr(), "Unknown command: {}", command).unwrap();
-            return;
+            if !file_contents.is_empty() {
+                panic!("Scanner not implemented");
+            } else {
+                println!("EOF  null");
+            }
         }
     }
 }
