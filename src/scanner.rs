@@ -149,10 +149,10 @@ impl Token {
         bytes: &[u8],
         tokens: &mut Vec<Token>,
         line_number: usize,
-    ) -> (Option<bool>, Option<bool>) {
+    ) -> (bool, bool) {
         let mut string = String::new();
         *i += 1;
-        let mut skips = (None, None);
+        let mut skips = (false, false);
         while *i < bytes.len() {
             if bytes[*i] == b'"' {
                 break;
@@ -163,40 +163,42 @@ impl Token {
                     err: "Unterminated string.".to_string(),
                     line: line_number + 1,
                 });
-                skips.0 = Some(true);
+                skips.0 = true;
             }
             string.push(bytes[*i] as char);
             *i += 1;
         }
         tokens.push(Token::String(string));
         *i += 1;
-        skips.1 = Some(true);
+        skips.1 = true;
         skips
     }
 
-    fn parse_number_literal(
-        i: &mut usize,
-        bytes: &[u8],
-        tokens: &mut Vec<Token>,
-    ) -> (Option<bool>, Option<bool>) {
+    fn parse_number_literal(i: &mut usize, bytes: &[u8], tokens: &mut Vec<Token>) -> (bool, bool) {
         let mut number = String::new();
         number.push(bytes[*i] as char);
         *i += 1;
+        let mut is_float = false;
 
         while *i < bytes.len() && ((bytes[*i] as char).is_numeric() || bytes[*i] == b'.') {
+            if bytes[*i] == b'.' && is_float {
+                tokens.push(Token::Number {
+                    value: MyFloat(number.parse::<f64>().unwrap()),
+                });
+                return (true, false);
+            } else if bytes[*i] == b'.' && !is_float {
+                is_float = true;
+            }
+
             number.push(bytes[*i] as char);
             *i += 1;
-        }
-
-        if number.ends_with('.') {
-            return (None, Some(true));
         }
 
         tokens.push(Token::Number {
             value: MyFloat(number.parse::<f64>().unwrap()),
         });
         *i += 1;
-        (None, Some(true))
+        (false, true)
     }
 
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
@@ -209,10 +211,10 @@ impl Token {
                 if bytes[i] == b'"' {
                     let (skip_line, skip_char) =
                         Token::parse_string_literal(&mut i, bytes, &mut tokens, line_number);
-                    if skip_line.unwrap_or(false) {
+                    if skip_line {
                         continue 'line;
                     }
-                    if skip_char.unwrap_or(false) {
+                    if skip_char {
                         continue 'char;
                     }
                 }
@@ -220,10 +222,10 @@ impl Token {
                 if (bytes[i] as char).is_numeric() {
                     let (skip_line, skip_char) =
                         Token::parse_number_literal(&mut i, bytes, &mut tokens);
-                    if skip_line.unwrap_or(false) {
+                    if skip_line {
                         continue 'line;
                     }
-                    if skip_char.unwrap_or(false) {
+                    if skip_char {
                         continue 'char;
                     }
                 }
