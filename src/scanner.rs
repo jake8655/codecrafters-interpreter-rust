@@ -13,6 +13,8 @@ pub enum Token {
     Plus,
     Semicolon,
     Star,
+    Equal,
+    EqualEqual,
     Invalid { char: char, line: usize },
 }
 
@@ -30,6 +32,8 @@ impl fmt::Display for Token {
             Token::Plus => write!(f, "PLUS + null"),
             Token::Semicolon => write!(f, "SEMICOLON ; null"),
             Token::Star => write!(f, "STAR * null"),
+            Token::Equal => write!(f, "EQUAL = null"),
+            Token::EqualEqual => write!(f, "EQUAL_EQUAL == null"),
             Token::Invalid { char, line } => {
                 write!(f, "[line {}] Error: Unexpected character: {}", line, char)
             }
@@ -54,19 +58,26 @@ impl Ord for Token {
 }
 
 impl Token {
-    fn tokenize_char(c: char, line: usize) -> Token {
+    fn tokenize_char(c: char, next_char: Option<char>, line: usize) -> (Token, bool) {
         match c {
-            '(' => Token::LeftParen,
-            ')' => Token::RightParen,
-            '{' => Token::LeftBrace,
-            '}' => Token::RightBrace,
-            ',' => Token::Comma,
-            '.' => Token::Dot,
-            '-' => Token::Minus,
-            '+' => Token::Plus,
-            ';' => Token::Semicolon,
-            '*' => Token::Star,
-            _ => Token::Invalid { char: c, line },
+            '(' => (Token::LeftParen, false),
+            ')' => (Token::RightParen, false),
+            '{' => (Token::LeftBrace, false),
+            '}' => (Token::RightBrace, false),
+            ',' => (Token::Comma, false),
+            '.' => (Token::Dot, false),
+            '-' => (Token::Minus, false),
+            '+' => (Token::Plus, false),
+            ';' => (Token::Semicolon, false),
+            '*' => (Token::Star, false),
+            '=' => {
+                if let Some('=') = next_char {
+                    (Token::EqualEqual, true)
+                } else {
+                    (Token::Equal, false)
+                }
+            }
+            _ => (Token::Invalid { char: c, line }, false),
         }
     }
 
@@ -74,8 +85,19 @@ impl Token {
         let mut tokens = Vec::new();
 
         for (line_number, line) in file_contents.lines().enumerate() {
-            for c in line.chars() {
-                tokens.push(Token::tokenize_char(c, line_number + 1));
+            let bytes = line.as_bytes();
+            let mut i = 0;
+            while i < bytes.len() {
+                let next_char = bytes.get(i + 1).map(|b| *b as char);
+
+                let (token, skip) =
+                    Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
+
+                tokens.push(token);
+                if skip {
+                    i += 1;
+                }
+                i += 1;
             }
         }
         tokens.push(Token::Eof);
