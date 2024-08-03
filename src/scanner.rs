@@ -2,7 +2,7 @@ use std::{cmp::Ordering, fmt};
 
 #[derive(PartialEq, Eq)]
 pub enum Token {
-    Eof,
+    // Single-character tokens
     LeftParen,
     RightParen,
     LeftBrace,
@@ -12,7 +12,10 @@ pub enum Token {
     Minus,
     Plus,
     Semicolon,
+    Slash,
     Star,
+
+    // One or two character tokens
     Equal,
     EqualEqual,
     Bang,
@@ -21,11 +24,58 @@ pub enum Token {
     LessEqual,
     Greater,
     GreaterEqual,
-    Slash,
+
+    // Literals
     String(String),
     Number(String),
     Identifier(String),
+
+    // Keywords
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+
     Invalid { err: String, line: usize },
+    Eof,
+}
+
+impl TryFrom<&str> for Token {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "and" => Ok(Token::And),
+            "class" => Ok(Token::Class),
+            "else" => Ok(Token::Else),
+            "false" => Ok(Token::False),
+            "fun" => Ok(Token::Fun),
+            "for" => Ok(Token::For),
+            "if" => Ok(Token::If),
+            "nil" => Ok(Token::Nil),
+            "or" => Ok(Token::Or),
+            "print" => Ok(Token::Print),
+            "return" => Ok(Token::Return),
+            "super" => Ok(Token::Super),
+            "this" => Ok(Token::This),
+            "true" => Ok(Token::True),
+            "var" => Ok(Token::Var),
+            "while" => Ok(Token::While),
+            _ => Err(format!("Unknown keyword: {}", value)),
+        }
+    }
 }
 
 impl fmt::Display for Token {
@@ -61,6 +111,22 @@ impl fmt::Display for Token {
                 }
             }
             Token::Identifier(s) => write!(f, "IDENTIFIER {} null", s),
+            Token::And => write!(f, "AND and null"),
+            Token::Class => write!(f, "CLASS class null"),
+            Token::Else => write!(f, "ELSE else null"),
+            Token::False => write!(f, "FALSE false null"),
+            Token::Fun => write!(f, "FUN fun null"),
+            Token::For => write!(f, "FOR for null"),
+            Token::If => write!(f, "IF if null"),
+            Token::Nil => write!(f, "NIL nil null"),
+            Token::Or => write!(f, "OR or null"),
+            Token::Print => write!(f, "PRINT print null"),
+            Token::Return => write!(f, "RETURN return null"),
+            Token::Super => write!(f, "SUPER super null"),
+            Token::This => write!(f, "THIS this null"),
+            Token::True => write!(f, "TRUE true null"),
+            Token::Var => write!(f, "VAR var null"),
+            Token::While => write!(f, "WHILE while null"),
             Token::Invalid { err, line } => {
                 write!(f, "[line {}] Error: {}", line, err)
             }
@@ -209,6 +275,12 @@ impl Token {
             identifier.push(bytes[*i] as char);
             *i += 1;
         }
+
+        if let Ok(keyword) = Token::try_from(identifier.as_str()) {
+            tokens.push(keyword);
+            return;
+        }
+
         tokens.push(Token::Identifier(identifier));
     }
 
