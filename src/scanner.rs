@@ -119,6 +119,7 @@ impl Token {
                     (Some(Token::Slash), false)
                 }
             }
+            ' ' | '\t' => (None, false),
             _ => (Some(Token::Invalid { char: c, line }), false),
         }
     }
@@ -137,7 +138,7 @@ impl Token {
 
                 if let Some(token) = token {
                     tokens.push(token);
-                } else {
+                } else if skip {
                     continue 'outer;
                 }
 
