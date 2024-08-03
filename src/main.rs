@@ -1,7 +1,7 @@
 mod scanner;
 
-use std::fs;
 use std::path::PathBuf;
+use std::{fs, process};
 
 use clap::{Parser, ValueEnum};
 
@@ -38,6 +38,17 @@ fn main() {
             tokens.sort();
 
             display_tokens(&tokens);
+
+            let exit_code = if tokens
+                .iter()
+                .any(|t| matches!(t, scanner::Token::Invalid { .. }))
+            {
+                65
+            } else {
+                0
+            };
+
+            process::exit(exit_code);
         }
     }
 }
