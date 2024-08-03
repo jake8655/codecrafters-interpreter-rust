@@ -24,6 +24,7 @@ pub enum Token {
     Slash,
     String(String),
     Number { value: MyFloat },
+    Identifier(String),
     Invalid { err: String, line: usize },
 }
 
@@ -69,6 +70,7 @@ impl fmt::Display for Token {
                     write!(f, "NUMBER {} {1:.1}", value.0, value.0)
                 }
             }
+            Token::Identifier(s) => write!(f, "IDENTIFIER {} null", s),
             Token::Invalid { err, line } => {
                 write!(f, "[line {}] Error: {}", line, err)
             }
@@ -214,6 +216,17 @@ impl Token {
         (false, true)
     }
 
+    fn parse_identifier(i: &mut usize, bytes: &[u8], tokens: &mut Vec<Token>) {
+        let mut identifier = String::new();
+        identifier.push(bytes[*i] as char);
+        *i += 1;
+        while *i < bytes.len() && (bytes[*i] == b'_' || (bytes[*i] as char).is_alphanumeric()) {
+            identifier.push(bytes[*i] as char);
+            *i += 1;
+        }
+        tokens.push(Token::Identifier(identifier));
+    }
+
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
 
@@ -243,10 +256,18 @@ impl Token {
                     }
                 }
 
+                if bytes[i] == b'_' || (bytes[i] as char).is_alphabetic() {
+                    Token::parse_identifier(&mut i, bytes, &mut tokens);
+                    continue 'char;
+                }
+
                 let next_char = bytes.get(i + 1).map(|b| *b as char);
 
                 let (token, skip) =
                     Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
+                if skip {
+                    i += 1;
+                }
 
                 if let Some(token) = token {
                     tokens.push(token);
@@ -254,9 +275,6 @@ impl Token {
                     continue 'line;
                 }
 
-                if skip {
-                    i += 1;
-                }
                 i += 1;
             }
         }
