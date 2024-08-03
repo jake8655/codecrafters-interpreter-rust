@@ -1,3 +1,5 @@
+mod scanner;
+
 use std::fs;
 use std::path::PathBuf;
 
@@ -32,11 +34,15 @@ fn main() {
                 return eprintln!("Failed to read file {}", args.file_path.display());
             };
 
-            if !file_contents.is_empty() {
-                panic!("Scanner not implemented");
-            } else {
-                println!("EOF  null");
-            }
+            let tokens = scanner::Token::scan_file(&file_contents);
+
+            display_tokens(&tokens);
         }
+    }
+}
+
+fn display_tokens(tokens: &Vec<scanner::Token>) {
+    for token in tokens {
+        println!("{}", token);
     }
 }
