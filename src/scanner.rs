@@ -201,6 +201,14 @@ impl Token {
             *i += 1;
         }
 
+        if number.ends_with('.') {
+            tokens.push(Token::Number {
+                value: MyFloat(number.parse::<f64>().unwrap()),
+            });
+            *i -= 1;
+            return (false, true);
+        }
+
         tokens.push(Token::Number {
             value: MyFloat(number.parse::<f64>().unwrap()),
         });
