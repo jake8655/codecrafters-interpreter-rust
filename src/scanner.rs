@@ -17,6 +17,10 @@ pub enum Token {
     EqualEqual,
     Bang,
     BangEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
     Invalid { char: char, line: usize },
 }
 
@@ -38,6 +42,10 @@ impl fmt::Display for Token {
             Token::EqualEqual => write!(f, "EQUAL_EQUAL == null"),
             Token::Bang => write!(f, "BANG ! null"),
             Token::BangEqual => write!(f, "BANG_EQUAL != null"),
+            Token::Less => write!(f, "LESS < null"),
+            Token::LessEqual => write!(f, "LESS_EQUAL <= null"),
+            Token::Greater => write!(f, "GREATER > null"),
+            Token::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
             Token::Invalid { char, line } => {
                 write!(f, "[line {}] Error: Unexpected character: {}", line, char)
             }
@@ -86,6 +94,20 @@ impl Token {
                     (Token::BangEqual, true)
                 } else {
                     (Token::Bang, false)
+                }
+            }
+            '<' => {
+                if let Some('=') = next_char {
+                    (Token::LessEqual, true)
+                } else {
+                    (Token::Less, false)
+                }
+            }
+            '>' => {
+                if let Some('=') = next_char {
+                    (Token::GreaterEqual, true)
+                } else {
+                    (Token::Greater, false)
                 }
             }
             _ => (Token::Invalid { char: c, line }, false),
