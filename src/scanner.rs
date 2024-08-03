@@ -185,13 +185,17 @@ impl Token {
                 tokens.push(Token::Number {
                     value: MyFloat(number.parse::<f64>().unwrap()),
                 });
-                return (true, false);
+                return (false, true);
             } else if bytes[*i] == b'.' && !is_float {
                 is_float = true;
             }
 
             number.push(bytes[*i] as char);
             *i += 1;
+        }
+
+        if number.ends_with('.') {
+            return (true, false);
         }
 
         tokens.push(Token::Number {
