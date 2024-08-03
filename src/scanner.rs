@@ -1,5 +1,7 @@
-use std::fmt;
+use ansi_term::Color::Red;
+use std::{cmp::Ordering, fmt};
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     Eof,
     LeftParen,
@@ -12,6 +14,7 @@ pub enum Token {
     Plus,
     Semicolon,
     Star,
+    Invalid { char: char, line: usize },
 }
 
 impl fmt::Display for Token {
@@ -28,12 +31,35 @@ impl fmt::Display for Token {
             Token::Plus => write!(f, "PLUS + null"),
             Token::Semicolon => write!(f, "SEMICOLON ; null"),
             Token::Star => write!(f, "STAR * null"),
+            Token::Invalid { char, line } => write!(
+                f,
+                "[line {}] {}: Unexpected character: {}",
+                line,
+                Red.paint("Error"),
+                char
+            ),
         }
     }
 }
 
-impl From<char> for Token {
-    fn from(c: char) -> Self {
+impl PartialOrd for Token {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Token {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (_, Token::Invalid { .. }) => Ordering::Greater,
+            (Token::Invalid { .. }, _) => Ordering::Less,
+            _ => Ordering::Equal,
+        }
+    }
+}
+
+impl Token {
+    fn tokenize_char(c: char, line: usize) -> Token {
         match c {
             '(' => Token::LeftParen,
             ')' => Token::RightParen,
@@ -45,17 +71,17 @@ impl From<char> for Token {
             '+' => Token::Plus,
             ';' => Token::Semicolon,
             '*' => Token::Star,
-            _ => panic!("Invalid token {}", c),
+            _ => Token::Invalid { char: c, line },
         }
     }
-}
 
-impl Token {
     pub fn scan_file(file_contents: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
 
-        for c in file_contents.chars() {
-            tokens.push(c.into());
+        for (line_number, line) in file_contents.lines().enumerate() {
+            for c in line.chars() {
+                tokens.push(Token::tokenize_char(c, line_number + 1));
+            }
         }
         tokens.push(Token::Eof);
 

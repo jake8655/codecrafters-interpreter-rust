@@ -34,7 +34,8 @@ fn main() {
                 return eprintln!("Failed to read file {}", args.file_path.display());
             };
 
-            let tokens = scanner::Token::scan_file(&file_contents);
+            let mut tokens = scanner::Token::scan_file(&file_contents);
+            tokens.sort();
 
             display_tokens(&tokens);
         }
@@ -43,6 +44,13 @@ fn main() {
 
 fn display_tokens(tokens: &Vec<scanner::Token>) {
     for token in tokens {
-        println!("{}", token);
+        match *token {
+            scanner::Token::Invalid { char, line } => {
+                eprintln!("{}", scanner::Token::Invalid { char, line });
+            }
+            _ => {
+                println!("{}", token);
+            }
+        }
     }
 }
