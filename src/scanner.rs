@@ -159,7 +159,6 @@ impl Token {
     ) -> (bool, bool) {
         let mut string = String::new();
         *i += 1;
-        let mut skips = (false, false);
         while *i < bytes.len() {
             if bytes[*i] == b'"' {
                 break;
@@ -170,15 +169,15 @@ impl Token {
                     err: "Unterminated string.".to_string(),
                     line: line_number + 1,
                 });
-                skips.0 = true;
+                *i += 1;
+                return (false, true);
             }
             string.push(bytes[*i] as char);
             *i += 1;
         }
         tokens.push(Token::String(string));
         *i += 1;
-        skips.1 = true;
-        skips
+        (false, true)
     }
 
     fn parse_number_literal(i: &mut usize, bytes: &[u8], tokens: &mut Vec<Token>) -> (bool, bool) {
