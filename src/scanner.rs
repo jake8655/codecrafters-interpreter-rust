@@ -283,60 +283,59 @@ impl Token {
 
         tokens.push(Token::Identifier(identifier));
     }
+}
 
-    pub fn scan_file(file_contents: &str) -> Vec<Token> {
-        let mut tokens = Vec::new();
+pub fn scan_file(file_contents: &str) -> Vec<Token> {
+    let mut tokens = Vec::new();
 
-        'line: for (line_number, line) in file_contents.lines().enumerate() {
-            let bytes = line.as_bytes();
-            let mut i = 0;
-            'char: while i < bytes.len() {
-                if bytes[i] == b'"' {
-                    let (skip_line, skip_char) =
-                        Token::parse_string_literal(&mut i, bytes, &mut tokens, line_number);
-                    if skip_line {
-                        continue 'line;
-                    }
-                    if skip_char {
-                        continue 'char;
-                    }
-                }
-
-                if (bytes[i] as char).is_numeric() {
-                    let (skip_line, skip_char) =
-                        Token::parse_number_literal(&mut i, bytes, &mut tokens);
-                    if skip_line {
-                        continue 'line;
-                    }
-                    if skip_char {
-                        continue 'char;
-                    }
-                }
-
-                if bytes[i] == b'_' || (bytes[i] as char).is_alphabetic() {
-                    Token::parse_identifier(&mut i, bytes, &mut tokens);
-                    continue 'char;
-                }
-
-                let next_char = bytes.get(i + 1).map(|b| *b as char);
-
-                let (token, skip) =
-                    Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
-                if skip {
-                    i += 1;
-                }
-
-                if let Some(token) = token {
-                    tokens.push(token);
-                } else if skip {
+    'line: for (line_number, line) in file_contents.lines().enumerate() {
+        let bytes = line.as_bytes();
+        let mut i = 0;
+        'char: while i < bytes.len() {
+            if bytes[i] == b'"' {
+                let (skip_line, skip_char) =
+                    Token::parse_string_literal(&mut i, bytes, &mut tokens, line_number);
+                if skip_line {
                     continue 'line;
                 }
+                if skip_char {
+                    continue 'char;
+                }
+            }
 
+            if (bytes[i] as char).is_numeric() {
+                let (skip_line, skip_char) =
+                    Token::parse_number_literal(&mut i, bytes, &mut tokens);
+                if skip_line {
+                    continue 'line;
+                }
+                if skip_char {
+                    continue 'char;
+                }
+            }
+
+            if bytes[i] == b'_' || (bytes[i] as char).is_alphabetic() {
+                Token::parse_identifier(&mut i, bytes, &mut tokens);
+                continue 'char;
+            }
+
+            let next_char = bytes.get(i + 1).map(|b| *b as char);
+
+            let (token, skip) = Token::tokenize_char(bytes[i] as char, next_char, line_number + 1);
+            if skip {
                 i += 1;
             }
-        }
-        tokens.push(Token::Eof);
 
-        tokens
+            if let Some(token) = token {
+                tokens.push(token);
+            } else if skip {
+                continue 'line;
+            }
+
+            i += 1;
+        }
     }
+    tokens.push(Token::Eof);
+
+    tokens
 }

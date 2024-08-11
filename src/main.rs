@@ -1,3 +1,4 @@
+mod parser;
 mod scanner;
 
 use std::path::PathBuf;
@@ -23,18 +24,20 @@ enum Command {
     /// Print the tokens of the file
     #[clap(name = "tokenize", alias = "t")]
     Tokenize,
+    /// Parse the file and print the AST
+    #[clap(name = "parse", alias = "p")]
+    Parse,
 }
 
 fn main() {
     let args = Cli::parse();
+    let Ok(file_contents) = fs::read_to_string(&args.file_path) else {
+        return eprintln!("Failed to read file {}", args.file_path.display());
+    };
 
     match args.command {
         Command::Tokenize => {
-            let Ok(file_contents) = fs::read_to_string(&args.file_path) else {
-                return eprintln!("Failed to read file {}", args.file_path.display());
-            };
-
-            let mut tokens = scanner::Token::scan_file(&file_contents);
+            let mut tokens = scanner::scan_file(&file_contents);
             tokens.sort();
 
             display_tokens(&tokens);
@@ -49,6 +52,13 @@ fn main() {
             };
 
             process::exit(exit_code);
+        }
+        Command::Parse => {
+            let ast = parser::parse(&file_contents);
+
+            for statement in ast {
+                println!("{}", statement);
+            }
         }
     }
 }
