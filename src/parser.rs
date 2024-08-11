@@ -1,21 +1,17 @@
-use crate::scanner;
+use crate::scanner::{self, ToChunks};
 
 pub fn parse(file_contents: &str) -> Vec<String> {
     let tokens = scanner::scan_file(file_contents);
+    let chunks = tokens.to_chunks();
     let mut ast = Vec::new();
 
-    for token in tokens {
-        match token {
+    for chunk in chunks {
+        match &chunk.token_type {
             scanner::Token::True | scanner::Token::False | scanner::Token::Nil => {
-                let token_str = token.to_string();
-                let lower_idx = token_str.find(' ').unwrap();
-                let higher_idx = token_str.rfind(' ').unwrap();
-
-                let value = token_str[lower_idx + 1..higher_idx].to_string();
-                ast.push(value);
+                ast.push(chunk.lexeme);
             }
-            scanner::Token::Number(n) => {
-                ast.push(n.to_string());
+            scanner::Token::Number(_) => {
+                ast.push(chunk.lexeme);
             }
             scanner::Token::Eof => {}
             _ => {

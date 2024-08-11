@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::{fs, process};
 
 use clap::{Parser, ValueEnum};
+use scanner::ToChunks;
 
 #[derive(Parser, Debug)]
 /// Lox interpreter
@@ -29,6 +30,29 @@ enum Command {
     Parse,
 }
 
+enum ExitCode {
+    Success,
+    Failure(i32),
+}
+
+impl From<i32> for ExitCode {
+    fn from(code: i32) -> Self {
+        match code {
+            0 => ExitCode::Success,
+            _ => ExitCode::Failure(code),
+        }
+    }
+}
+
+impl ExitCode {
+    fn exit(self) -> ! {
+        match self {
+            ExitCode::Success => process::exit(0),
+            ExitCode::Failure(code) => process::exit(code),
+        }
+    }
+}
+
 fn main() {
     let args = Cli::parse();
     let Ok(file_contents) = fs::read_to_string(&args.file_path) else {
@@ -40,18 +64,20 @@ fn main() {
             let mut tokens = scanner::scan_file(&file_contents);
             tokens.sort();
 
-            display_tokens(&tokens);
-
             let exit_code = if tokens
                 .iter()
                 .any(|t| matches!(t, scanner::Token::Invalid { .. }))
             {
-                65
+                ExitCode::Failure(65)
             } else {
-                0
+                ExitCode::Success
             };
 
-            process::exit(exit_code);
+            let chunks = tokens.to_chunks();
+
+            display_chunks(&chunks);
+
+            exit_code.exit();
         }
         Command::Parse => {
             let ast = parser::parse(&file_contents);
@@ -63,20 +89,14 @@ fn main() {
     }
 }
 
-fn display_tokens(tokens: &Vec<scanner::Token>) {
-    for token in tokens {
-        match token {
+fn display_chunks(chunks: &Vec<scanner::Chunk>) {
+    for chunk in chunks {
+        match &chunk.token_type {
             scanner::Token::Invalid { err, line } => {
-                eprintln!(
-                    "{}",
-                    scanner::Token::Invalid {
-                        err: err.clone(),
-                        line: *line
-                    }
-                );
+                eprintln!("[line {}] Error: {}", line, err);
             }
             _ => {
-                println!("{}", token);
+                println!("{}", chunk);
             }
         }
     }
