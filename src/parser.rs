@@ -6,7 +6,10 @@ pub fn parse(file_contents: &str) -> Vec<String> {
 
     for token in tokens {
         match token {
-            scanner::Token::True | scanner::Token::False | scanner::Token::Nil => {
+            scanner::Token::True
+            | scanner::Token::False
+            | scanner::Token::Nil
+            | scanner::Token::Number(_) => {
                 let token_str = token.to_string();
                 let lower_idx = token_str.find(' ').unwrap();
                 let higher_idx = token_str.rfind(' ').unwrap();
