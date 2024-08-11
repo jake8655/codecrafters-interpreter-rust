@@ -10,7 +10,7 @@ pub fn parse(file_contents: &str) -> Vec<String> {
             scanner::Token::True | scanner::Token::False | scanner::Token::Nil => {
                 ast.push(chunk.lexeme);
             }
-            scanner::Token::Number(_) => {
+            scanner::Token::Number(_) | scanner::Token::String(_) => {
                 ast.push(chunk.literal.unwrap());
             }
             scanner::Token::Eof => {}

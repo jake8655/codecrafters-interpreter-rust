@@ -142,8 +142,13 @@ impl Ord for Token {
 }
 
 pub struct Chunk {
+    /// The type of the token.
     pub token_type: Token,
+    /// The actual sequence of characters that make up the token.
     pub lexeme: String,
+    /// The literal value of the token.
+    /// For most tokens, this is None.
+    /// For Strings/Numbers, this is the actual value of the string/number.
     pub literal: Option<String>,
 }
 
